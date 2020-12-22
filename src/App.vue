@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <div class="container">
+    <div class="container" v-if="todos">
       <h1 class="header">Todo list</h1>
       <div class="todos-holder">
         <input
@@ -11,7 +11,13 @@
           @keyup="add"
         />
         <p v-if="!todos.length" class="empty">There are no todos yet!</p>
-        <Todo v-for="todo in todos" :todo="todo" :key="todo.id" />
+        <Todo
+          v-for="todo in todos"
+          :todo="todo"
+          :key="todo.id"
+          @remove="remove"
+          @update="update"
+        />
       </div>
     </div>
   </div>
@@ -29,23 +35,55 @@ export default {
   data() {
     return {
       newTodo: "",
-      todos: []
+      todos: null
     };
   },
   methods: {
     add(e) {
       if (e.key == "Enter") {
-        this.todos.unshift({
-          description: this.newTodo,
-          completed: false
-        });
-        this.newTodo = "";
+        axios
+          .post("http://localhost:8000/api/todo-create/", {
+            text: this.newTodo,
+            completed: false
+          })
+          .then(response => {
+            this.todos.unshift(response.data);
+            this.newTodo = "";
+          })
+          .catch(err => console.log(err));
       }
+    },
+    remove(id) {
+      axios
+        .delete("http://localhost:8000/api/todo-delete/" + id + "/")
+        .then(response => {
+          this.todos.splice(
+            this.todos.findIndex(todo => todo.id == response.data.id),
+            1
+          );
+        })
+        .catch(err => console.log(err));
+    },
+    update(todo) {
+      axios
+        .post("http://localhost:8000/api/todo-update/" + todo.id + "/", {
+          id: todo.id,
+          completed: !todo.completed,
+          text: todo.text
+        })
+        .then(response => {
+          this.todos.splice(
+            this.todos.findIndex(todo => todo.id == response.data.id),
+            1,
+            response.data
+          );
+        })
+        .catch(err => console.log(err));
     }
   },
   created() {
     axios
-      .get("url")
+      .get("http://localhost:8000/api/todo-list/")
       .then(response => {
         this.todos = response.data;
       })
@@ -65,7 +103,8 @@ export default {
   -webkit-font-smoothing: antialiased
   -moz-osx-font-smoothing: grayscale
   min-height: 100vh
-  background: #F0F0F0
+  // background: #F0F0F0
+  background-image: linear-gradient(to left bottom, #ffffff, #fbfbfb, #f8f8f8, #f4f4f4, #f1f1f1, #efeff2, #ebedf3, #e6ecf4, #daedf7, #ceeff4, #c6f0e9, #c7efd9)
   display: flex
   justify-content: center
   color: #292929
@@ -93,6 +132,7 @@ export default {
   background-color: white
   box-shadow: 3px 3px 3px #E0E0E0
   width: 100%
+  margin-bottom: 60px
 
 .new
   border: none
