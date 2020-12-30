@@ -40,7 +40,7 @@ export default {
   },
   methods: {
     add(e) {
-      if (e.key == "Enter") {
+      if (e.key == "Enter" && this.newTodo.length > 0) {
         axios
           .post("http://localhost:8000/api/todo-create/", {
             text: this.newTodo,
